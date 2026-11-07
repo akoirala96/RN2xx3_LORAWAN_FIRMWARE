@@ -1,4 +1,9 @@
 # RN2xx3_LORAWAN_FIRMWARE
+
+## Experimental Meshtastic host adapter
+
+For the Linux/Raspberry Pi RN2903 UART host adapter, see [meshtastic/README.md](meshtastic/README.md). This addition uses stock modem commands and does not replace the Microchip firmware.
+
 <img src="resources/media/IoT-Made-Easy-Logo.png" width=100>
 
 > "Wireless Made Easy!" - Open sourcing the latest RN2xx3 beta firmware for self-support, self-maintenance and self-programming

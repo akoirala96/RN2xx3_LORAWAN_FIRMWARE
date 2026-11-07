@@ -1,0 +1,32 @@
+name: RN2903 host adapter
+on:
+  push:
+    paths: ['meshtastic/**', '.github/workflows/rn2xx3-host.yml']
+  pull_request:
+    paths: ['meshtastic/**', '.github/workflows/rn2xx3-host.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  transport-and-ui:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install the BLE contract test dependency
+        run: python3 -m venv .ci-venv && .ci-venv/bin/pip install dbus-next==0.2.3
+      - name: UART framing and local UI security
+        run: .ci-venv/bin/python -m unittest discover -s meshtastic/tests -v
+      - name: UART memory and undefined behavior checks
+        env:
+          CXXFLAGS: -fsanitize=address,undefined -fno-omit-frame-pointer -fno-pie -no-pie
+        run: .ci-venv/bin/python -m unittest discover -s meshtastic/tests -p test_uart.py -v
+  native-build:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Build the pinned Meshtastic runtime
+        working-directory: meshtastic
+        run: docker build --build-arg BUILD_JOBS=2 --tag rn2xx3-meshtastic:ci .
