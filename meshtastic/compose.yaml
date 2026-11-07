@@ -1,0 +1,63 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: rn2xx3-meshtastic
+services:
+  node:
+    build:
+      context: .
+      args:
+        BUILD_JOBS: ${BUILD_JOBS:-2}
+    image: rn2xx3-meshtastic:experimental
+    restart: unless-stopped
+    user: ${RUN_UID:-1000}:${RUN_GID:-1000}
+    environment:
+      MESHTASTIC_RN2XX3_SERIAL: /dev/rn2xx3
+      MESHTASTIC_RN2XX3_TX: ${RADIO_TX_ENABLED:-0}
+    devices:
+      - ${RADIO_DEVICE:?Run the setup tool first}:/dev/rn2xx3
+    group_add:
+      - ${RADIO_DEVICE_GID:?Run the setup tool first}
+    volumes:
+      - ./config.yaml:/etc/meshtasticd/config.yaml:ro
+      - ./data/node:/data
+    ports:
+      - 127.0.0.1:${NODE_API_PORT:-4403}:4403
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 256m
+    cpus: 1
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: '2'
+  ui:
+    profiles: [ui]
+    image: ghcr.io/yeraze/meshmonitor@sha256:0c718c3a1a0318694aa6a5507184037a04e02847a9140fe084b010bde75989e0
+    restart: unless-stopped
+    depends_on: [node]
+    environment:
+      NODE_ENV: production
+      PUID: ${RUN_UID:-1000}
+      PGID: ${RUN_GID:-1000}
+      COOKIE_SECURE: 'false'
+      SESSION_ROLLING: 'false'
+      MESHTASTIC_NODE_IP: node
+      MESHTASTIC_TCP_PORT: '4403'
+      SESSION_SECRET: ${UI_SESSION_SECRET:?Run the setup tool first}
+      ADMIN_USERNAME: ${UI_ADMIN_USERNAME:-meshadmin}
+      ADMIN_PASSWORD: ${UI_ADMIN_PASSWORD:?Run the setup tool first}
+      DISABLE_ANONYMOUS: 'true'
+      ALLOWED_ORIGINS: http://localhost:${UI_PORT:-8080},http://127.0.0.1:${UI_PORT:-8080}
+      VERSION_CHECK_DISABLED: 'true'
+      LOG_LEVEL: warn
+    volumes:
+      - ./data/ui:/data
+    ports:
+      - 127.0.0.1:${UI_PORT:-8080}:3001
+    mem_limit: 1g
+    cpus: 1
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: '2'
